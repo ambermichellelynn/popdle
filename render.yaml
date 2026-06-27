@@ -37,3 +37,7 @@ services:
     envVars:
       - key: VITE_API_BASE
         value: https://popdle-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

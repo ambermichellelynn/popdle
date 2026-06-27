@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 import { ArchivePage } from "./components/ArchivePage";
 import { GameBoard } from "./components/GameBoard";
@@ -6,6 +7,18 @@ import { PaywallModal } from "./components/PaywallModal";
 import { StatsModal } from "./components/StatsModal";
 import { useUserId } from "./hooks/useUserId";
 import { api } from "./api";
+
+function ArchivePuzzleRoute({ userId, onViewStats }: { userId: string; onViewStats: () => void }) {
+  const { wordDate } = useParams<{ wordDate: string }>();
+  return (
+    <div className="archive-puzzle-view">
+      <GameBoard userId={userId} wordDate={wordDate} />
+      <button className="stats-link" onClick={onViewStats}>
+        View stats
+      </button>
+    </div>
+  );
+}
 
 const STATS_KEY = "popdle_stats";
 
@@ -16,8 +29,6 @@ interface Stats {
   bestStreak: number;
   lastPlayedDate: string | null;
 }
-
-type View = "game" | "archive" | "archive-puzzle";
 
 function loadStats(): Stats {
   const raw = localStorage.getItem(STATS_KEY);
@@ -31,6 +42,10 @@ function isAnonymousEmail(email: string | null): boolean {
 }
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const onArchivePuzzlePage = location.pathname.startsWith("/archive/");
+
   const [userId, setUserId] = useUserId();
   const [stats, setStats] = useState<Stats>(loadStats);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -39,8 +54,6 @@ function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
-  const [view, setView] = useState<View>("game");
-  const [archivePuzzleDate, setArchivePuzzleDate] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -120,8 +133,7 @@ function App() {
     setUserId(newId);
     setIsPremium(false);
     setUserEmail(null);
-    setView("game");
-    setArchivePuzzleDate(null);
+    navigate("/");
   }
 
   async function handleLoggedIn(newUserId: string) {
@@ -145,28 +157,26 @@ function App() {
 
   function handleArchiveClick() {
     if (isPremium) {
-      setView("archive");
+      navigate("/archive");
     } else {
       handlePaywallOpen();
     }
   }
 
-  function handleTitleClick() {
-    setView("game");
-    setArchivePuzzleDate(null);
-  }
-
   function handleHeaderLeftClick() {
-    if (view === "archive-puzzle") {
-      setView("archive");
+    if (onArchivePuzzlePage) {
+      navigate("/archive");
     } else {
       handleArchiveClick();
     }
   }
 
   const loggedIn = !isAnonymousEmail(userEmail);
-  const headerLeftLabel =
-    view === "archive-puzzle" ? "Back to archive" : isPremium ? "Browse archive" : "Upgrade for the archive";
+  const headerLeftLabel = onArchivePuzzlePage
+    ? "Back to archive"
+    : isPremium
+      ? "Browse archive"
+      : "Upgrade for the archive";
 
   return (
     <div className="app">
@@ -185,7 +195,7 @@ function App() {
         )}
       </div>
 
-      <h1 className="app-title app-title-link" onClick={handleTitleClick}>
+      <h1 className="app-title app-title-link" onClick={() => navigate("/")}>
         Popdle
       </h1>
 
@@ -195,34 +205,34 @@ function App() {
         </div>
       )}
 
-      {view === "game" && (
-        <>
-          <GameBoard userId={userId} onGameOver={handleGameOver} />
-          <button className="stats-link" onClick={handleStatsClick}>
-            {isPremium ? "View stats" : "Upgrade to see your stats"}
-          </button>
-        </>
-      )}
-
-      {view === "archive" && (
-        <ArchivePage
-          userId={userId}
-          onSelectPuzzle={(wordDate) => {
-            setArchivePuzzleDate(wordDate);
-            setView("archive-puzzle");
-          }}
-          onViewStats={() => setShowStats(true)}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <GameBoard userId={userId} onGameOver={handleGameOver} />
+              <button className="stats-link" onClick={handleStatsClick}>
+                {isPremium ? "View stats" : "Upgrade to see your stats"}
+              </button>
+            </>
+          }
         />
-      )}
-
-      {view === "archive-puzzle" && archivePuzzleDate && (
-        <div className="archive-puzzle-view">
-          <GameBoard userId={userId} wordDate={archivePuzzleDate} />
-          <button className="stats-link" onClick={() => setShowStats(true)}>
-            View stats
-          </button>
-        </div>
-      )}
+        <Route
+          path="/archive"
+          element={
+            <ArchivePage
+              userId={userId}
+              onSelectPuzzle={(wordDate) => navigate(`/archive/${wordDate}`)}
+              onViewStats={() => setShowStats(true)}
+            />
+          }
+        />
+        <Route
+          path="/archive/:wordDate"
+          element={<ArchivePuzzleRoute userId={userId} onViewStats={() => setShowStats(true)} />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       {showStats && (
         <StatsModal

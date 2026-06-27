@@ -661,3 +661,63 @@
     opacity: 0;
   }
 }
+
+@media (max-width: 480px) {
+  .app {
+    padding: 16px 10px 32px;
+    gap: 16px;
+  }
+
+  .app-title {
+    font-size: 26px;
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .auth-link {
+    font-size: 12px;
+  }
+
+  .tile {
+    width: clamp(38px, 15.5vw, 52px);
+    height: clamp(38px, 15.5vw, 52px);
+    font-size: clamp(18px, 5.5vw, 24px);
+  }
+
+  .row {
+    gap: 4px;
+  }
+
+  .board-grid {
+    gap: 4px;
+  }
+
+  .key {
+    height: 44px;
+    font-size: 11px;
+  }
+
+  .keyboard-row {
+    gap: 4px;
+  }
+
+  .modal {
+    padding: 22px 16px 18px;
+  }
+
+  .plan-compare {
+    flex-direction: column;
+  }
+
+  .test-card-note {
+    font-size: 11px;
+  }
+
+  .stats-modal,
+  .modal {
+    max-width: 100%;
+  }
+}
