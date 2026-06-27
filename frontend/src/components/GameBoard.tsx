@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type GuessResult, type TodayPuzzle } from "../api";
+import { computeLetterStatus, type LetterStatus } from "../lib/letterStatus";
 import { Confetti } from "./Confetti";
 
 interface GameBoardProps {
@@ -10,8 +11,6 @@ interface GameBoardProps {
 
 const MAX_ATTEMPTS = 6;
 const KEYBOARD_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-
-type LetterStatus = "correct" | "present" | "absent";
 
 export function GameBoard({ userId, onGameOver, wordDate }: GameBoardProps) {
   const [puzzle, setPuzzle] = useState<TodayPuzzle | null>(null);
@@ -72,20 +71,7 @@ export function GameBoard({ userId, onGameOver, wordDate }: GameBoardProps) {
     }
   }
 
-  const letterStatus: Record<string, LetterStatus> = {};
-  for (const result of history) {
-    result.guess.split("").forEach((letter, i) => {
-      const status: LetterStatus = result.correct_positions.includes(i)
-        ? "correct"
-        : result.present_letters.includes(i)
-          ? "present"
-          : "absent";
-      const existing = letterStatus[letter];
-      if (!existing || status === "correct" || (status === "present" && existing === "absent")) {
-        letterStatus[letter] = status;
-      }
-    });
-  }
+  const letterStatus = computeLetterStatus(history);
 
   useEffect(() => {
     if (!puzzle || finished) return;
