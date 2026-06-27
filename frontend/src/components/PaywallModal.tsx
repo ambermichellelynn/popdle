@@ -4,7 +4,7 @@ import { api } from "../api";
 interface PaywallModalProps {
   userId: string;
   onClose: () => void;
-  onLoggedIn: (userId: string) => void;
+  onLoggedIn: (userId: string) => void | Promise<void>;
   mode?: "upgrade" | "account";
 }
 
@@ -26,10 +26,10 @@ export function PaywallModal({ userId, onClose, onLoggedIn, mode = "upgrade" }: 
     try {
       if (authMode === "signup") {
         const user = await api.signup(userId, email, password);
-        onLoggedIn(user.id);
+        await onLoggedIn(user.id);
       } else {
         const user = await api.login(email, password);
-        onLoggedIn(user.id);
+        await onLoggedIn(user.id);
       }
       if (mode === "account") {
         onClose();

@@ -18,7 +18,7 @@ export function ArchivePage({ userId, onSelectPuzzle, onViewStats }: ArchivePage
   return (
     <div className="archive-page">
       <div className="archive-page-header">
-        <button className="ghost-btn back-btn" onClick={onViewStats}>
+        <button className="stats-link" onClick={onViewStats}>
           View stats
         </button>
       </div>

@@ -231,11 +231,11 @@
 
 .stats-link {
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: none;
   padding: 8px 16px;
   font-size: 13px;
   color: var(--text);
+  opacity: 0.7;
   cursor: pointer;
 }
 
@@ -383,16 +383,6 @@
   align-items: center;
 }
 
-.archive-page-header .back-btn {
-  align-self: center;
-}
-
-.archive-puzzle-header {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 
 .archive-list {
   display: flex;
@@ -608,13 +598,38 @@
   margin-bottom: 4px;
 }
 
-.checkout-notice {
-  width: 100%;
-  text-align: center;
-  padding: 10px 14px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: var(--text-h);
+  color: var(--bg);
+  padding: 10px 18px;
+  border-radius: 6px;
   font-size: 13px;
+  box-shadow: var(--shadow);
+  animation: toast-in-out 4s ease forwards;
+}
+
+@keyframes toast-in-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
 }
 
 .confetti-layer {

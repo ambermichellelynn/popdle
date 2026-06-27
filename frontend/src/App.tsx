@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { ArchivePage } from "./components/ArchivePage";
 import { GameBoard } from "./components/GameBoard";
-import { Onboarding } from "./components/Onboarding";
 import { PaywallModal } from "./components/PaywallModal";
 import { StatsModal } from "./components/StatsModal";
 import { useUserId } from "./hooks/useUserId";
@@ -33,7 +32,6 @@ function isAnonymousEmail(email: string | null): boolean {
 
 function App() {
   const [userId, setUserId] = useUserId();
-  const [onboarded, setOnboarded] = useState(() => localStorage.getItem("popdle_onboarded") === "1");
   const [stats, setStats] = useState<Stats>(loadStats);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -56,8 +54,8 @@ function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (onboarded) api.recordEvent(userId, "game_started").catch(() => {});
-  }, [onboarded, userId]);
+    api.recordEvent(userId, "game_started").catch(() => {});
+  }, [userId]);
 
   // Handle the redirect back from Stripe Checkout (?checkout=success&session_id=...)
   useEffect(() => {
@@ -84,10 +82,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleOnboardingDone() {
-    localStorage.setItem("popdle_onboarded", "1");
-    setOnboarded(true);
-  }
+  // Toast notices auto-dismiss after a few seconds instead of sticking around forever.
+  useEffect(() => {
+    if (!checkoutNotice) return;
+    const timeout = setTimeout(() => setCheckoutNotice(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [checkoutNotice]);
 
   function handleGameOver(won: boolean) {
     const today = new Date().toISOString().slice(0, 10);
@@ -156,17 +156,23 @@ function App() {
     setArchivePuzzleDate(null);
   }
 
-  if (!onboarded) {
-    return <Onboarding userId={userId} onDone={handleOnboardingDone} />;
+  function handleHeaderLeftClick() {
+    if (view === "archive-puzzle") {
+      setView("archive");
+    } else {
+      handleArchiveClick();
+    }
   }
 
   const loggedIn = !isAnonymousEmail(userEmail);
+  const headerLeftLabel =
+    view === "archive-puzzle" ? "Back to archive" : isPremium ? "Browse archive" : "Upgrade for the archive";
 
   return (
     <div className="app">
       <div className="app-header">
-        <button className="auth-link" onClick={handleArchiveClick}>
-          {isPremium ? "Browse archive" : "Upgrade for the archive"}
+        <button className="auth-link" onClick={handleHeaderLeftClick}>
+          {headerLeftLabel}
         </button>
         {loggedIn ? (
           <button className="auth-link" onClick={handleSignOut}>
@@ -183,7 +189,11 @@ function App() {
         Popdle
       </h1>
 
-      {checkoutNotice && <p className="checkout-notice">{checkoutNotice}</p>}
+      {checkoutNotice && (
+        <div className="toast" role="status">
+          {checkoutNotice}
+        </div>
+      )}
 
       {view === "game" && (
         <>
@@ -207,15 +217,10 @@ function App() {
 
       {view === "archive-puzzle" && archivePuzzleDate && (
         <div className="archive-puzzle-view">
-          <div className="archive-puzzle-header">
-            <button className="ghost-btn back-btn" onClick={() => setView("archive")}>
-              Back to archive
-            </button>
-            <button className="stats-link" onClick={() => setShowStats(true)}>
-              View stats
-            </button>
-          </div>
           <GameBoard userId={userId} wordDate={archivePuzzleDate} />
+          <button className="stats-link" onClick={() => setShowStats(true)}>
+            View stats
+          </button>
         </div>
       )}
 

@@ -77,6 +77,10 @@ export function GameBoard({ userId, onGameOver, wordDate }: GameBoardProps) {
     if (!puzzle || finished) return;
 
     function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target;
+      if (target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        return;
+      }
       if (e.key === "Enter") {
         if (currentGuess.length === wordLength) void submitGuess(currentGuess);
         return;
