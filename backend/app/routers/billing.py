@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.models import Subscription, User
+from app.services.validation import is_valid_uuid
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -39,6 +40,8 @@ class ConfirmCheckoutRequest(BaseModel):
 
 @router.post("/checkout-session", response_model=CheckoutSessionResponse)
 def create_checkout_session(payload: CheckoutSessionRequest, db: Session = Depends(get_db)) -> CheckoutSessionResponse:
+    if not is_valid_uuid(payload.user_id):
+        raise HTTPException(status_code=404, detail="User not found")
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -47,7 +50,10 @@ def create_checkout_session(payload: CheckoutSessionRequest, db: Session = Depen
     cancel_url = f"{settings.frontend_base_url}/?checkout=cancel"
 
     if not settings.stripe_secret_key:
-        session_id = f"{SIMULATED_SESSION_PREFIX}{uuid.uuid4()}"
+        # Embed the user id so confirm() can verify this session belongs to
+        # the user redeeming it — otherwise a leaked/guessed session id would
+        # let anyone self-grant premium without "paying".
+        session_id = f"{SIMULATED_SESSION_PREFIX}{user.id}:{uuid.uuid4()}"
         return CheckoutSessionResponse(
             url=success_url.replace("{CHECKOUT_SESSION_ID}", session_id),
             session_id=session_id,
@@ -90,11 +96,16 @@ def _grant_premium(db: Session, user: User, stripe_customer_id: str | None, stri
 
 @router.post("/confirm")
 def confirm_checkout(payload: ConfirmCheckoutRequest, db: Session = Depends(get_db)) -> dict:
+    if not is_valid_uuid(payload.user_id):
+        raise HTTPException(status_code=404, detail="User not found")
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     if payload.session_id.startswith(SIMULATED_SESSION_PREFIX):
+        owner_id = payload.session_id[len(SIMULATED_SESSION_PREFIX) :].split(":", 1)[0]
+        if owner_id != user.id:
+            raise HTTPException(status_code=400, detail="Checkout session not confirmed for this user")
         _grant_premium(db, user, stripe_customer_id=None, stripe_subscription_id=None)
         return {"is_premium": True, "simulated": True}
 

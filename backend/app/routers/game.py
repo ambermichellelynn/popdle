@@ -13,6 +13,7 @@ from app.schemas import (
     TodayPuzzle,
 )
 from app.services.tmdb_words import pick_daily_word
+from app.services.validation import is_valid_uuid
 
 router = APIRouter(prefix="/game", tags=["game"])
 
@@ -21,6 +22,8 @@ ARCHIVE_DAYS = 20
 
 
 def _get_or_create_attempt(db: Session, user_id: str, daily_word_id: str) -> GameAttempt:
+    if not is_valid_uuid(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
     attempt = (
         db.query(GameAttempt)
         .filter(GameAttempt.user_id == user_id, GameAttempt.daily_word_id == daily_word_id)
@@ -56,6 +59,8 @@ def _get_or_create_word_for_date(db: Session, target_date: date) -> DailyWord:
 
 
 def _require_user(db: Session, user_id: str) -> User:
+    if not is_valid_uuid(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -71,10 +76,27 @@ def _require_archive_access(db: Session, user_id: str, target_date: date) -> Non
 
 
 def _score_guess(guess: str, answer: str) -> tuple[list[int], list[int]]:
+    """Scores a guess against the answer, respecting letter frequency.
+
+    A repeated letter in the guess can only be marked "present" as many times
+    as it actually occurs (minus correct-position matches) in the answer —
+    otherwise a guess like "TUTTI" against "LIGHT" would mark all three T's
+    present instead of just the one the answer actually has.
+    """
     correct_positions = [i for i, ch in enumerate(guess) if i < len(answer) and ch == answer[i]]
-    present_letters = [
-        i for i, ch in enumerate(guess) if i not in correct_positions and ch in answer
-    ]
+
+    remaining_letters = list(answer)
+    for i in correct_positions:
+        remaining_letters[i] = None
+
+    present_letters = []
+    for i, ch in enumerate(guess):
+        if i in correct_positions:
+            continue
+        if ch in remaining_letters:
+            present_letters.append(i)
+            remaining_letters[remaining_letters.index(ch)] = None
+
     return correct_positions, present_letters
 
 
@@ -103,6 +125,8 @@ def get_today(
     db: Session = Depends(get_db),
 ) -> TodayPuzzle:
     target_date = date.fromisoformat(date_str) if date_str else date.today()
+    if target_date != date.today() and not user_id:
+        raise HTTPException(status_code=403, detail="Archived puzzles are a Premium feature")
     if user_id:
         _require_archive_access(db, user_id, target_date)
 
@@ -142,6 +166,8 @@ def submit_guess(payload: GuessRequest, db: Session = Depends(get_db)) -> GuessR
 
     if len(guess) != len(daily_word.answer):
         raise HTTPException(status_code=400, detail=f"Guess must be {len(daily_word.answer)} letters")
+    if not guess.isalpha():
+        raise HTTPException(status_code=400, detail="Guess must contain only letters")
 
     attempt = _get_or_create_attempt(db, payload.user_id, daily_word.id)
 

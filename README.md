@@ -47,8 +47,25 @@ npm run dev
 
 ## Key endpoints
 
-- `GET /game/today` — today's puzzle metadata (category, clue, word length — not the answer)
+- `GET /game/today` — today's (or, for Premium users, an archived) puzzle, with resumable guess history
 - `POST /game/guess` — submit a guess, get per-letter scoring
+- `GET /game/archive` / `GET /game/history` — Premium-only: the last 20 puzzles, and full play history
+- `POST /users/signup` / `POST /users/login` — email + password accounts (PBKDF2-hashed)
+- `POST /billing/checkout-session` / `POST /billing/confirm` — Stripe test-mode checkout (or simulated, if no Stripe key is configured)
 - `POST /events` — record a funnel event
 - `GET /experiments/{key}/assignment?user_id=...` — get/assign an A/B variant
 - `GET /admin/funnel` — funnel conversion + onboarding-variant activation rates
+
+## Testing
+
+```bash
+cd backend
+docker exec -i <postgres-container> psql -U popdle -d popdle -c "CREATE DATABASE popdle_test;"
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest
+```
+
+Covers guess scoring (including duplicate-letter edge cases), game-over/validation rules,
+Premium archive/history gating, auth (signup/login), and the Stripe checkout flow (including
+that a leaked simulated session id can't be redeemed by a different user).

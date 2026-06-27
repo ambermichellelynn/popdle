@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import User
 from app.services.auth import hash_password, verify_password
+from app.services.validation import is_valid_uuid
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -36,6 +37,8 @@ class UserOut(BaseModel):
 @router.post("/ensure", response_model=UserOut)
 def ensure_user(payload: EnsureUserRequest, db: Session = Depends(get_db)) -> User:
     """Idempotently creates an anonymous user record for a client-generated id."""
+    if not is_valid_uuid(payload.user_id):
+        raise HTTPException(status_code=400, detail="user_id must be a valid UUID")
     user = db.query(User).filter(User.id == payload.user_id).first()
     if user:
         return user
@@ -49,6 +52,9 @@ def ensure_user(payload: EnsureUserRequest, db: Session = Depends(get_db)) -> Us
 @router.post("/signup", response_model=UserOut)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> User:
     """Sets real credentials on the current anonymous user record, preserving its stats."""
+    if not is_valid_uuid(payload.user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+
     existing_email = db.query(User).filter(User.email == payload.email).first()
     if existing_email and existing_email.id != payload.user_id:
         raise HTTPException(status_code=409, detail="An account with that email already exists")
