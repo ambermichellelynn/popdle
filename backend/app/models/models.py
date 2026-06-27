@@ -33,6 +33,7 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=True)
     onboarding_variant: Mapped[str] = mapped_column(String, default="control")
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -62,6 +63,7 @@ class GameAttempt(Base):
     guesses: Mapped[str] = mapped_column(String, default="")  # comma-separated guess words
     won: Mapped[bool] = mapped_column(Boolean, default=False)
     attempts_used: Mapped[int] = mapped_column(Integer, default=0)
+    hints_used: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     finished_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 

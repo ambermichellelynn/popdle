@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
-from app.routers import events, experiments, funnel, game, users
+from app.routers import billing, events, experiments, funnel, game, users
 
 app = FastAPI(title="Popdle API")
 
@@ -19,6 +19,7 @@ app.include_router(game.router)
 app.include_router(events.router)
 app.include_router(experiments.router)
 app.include_router(funnel.router)
+app.include_router(billing.router)
 
 
 @app.on_event("startup")

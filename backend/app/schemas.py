@@ -5,18 +5,6 @@ from pydantic import BaseModel
 from app.models.models import Category
 
 
-class TodayPuzzle(BaseModel):
-    word_date: date
-    category: Category
-    clue: str
-    word_length: int
-
-
-class GuessRequest(BaseModel):
-    user_id: str
-    guess: str
-
-
 class GuessResult(BaseModel):
     guess: str
     correct_positions: list[int]
@@ -25,6 +13,42 @@ class GuessResult(BaseModel):
     attempts_used: int
     game_over: bool
     answer: str | None = None
+
+
+class TodayPuzzle(BaseModel):
+    word_date: date
+    category: Category
+    clue: str
+    word_length: int
+    history: list[GuessResult] = []
+    game_over: bool = False
+    answer: str | None = None
+    is_archive: bool = False
+
+
+class GuessRequest(BaseModel):
+    user_id: str
+    guess: str
+    word_date: date | None = None
+
+
+class ArchiveEntry(BaseModel):
+    word_date: date
+    category: Category
+    clue: str
+    word_length: int
+    played: bool
+    game_over: bool = False
+    won: bool | None = None
+
+
+class HistoryEntry(BaseModel):
+    word_date: date
+    category: Category
+    answer: str | None = None
+    won: bool
+    attempts_used: int
+    game_over: bool
 
 
 class EventCreate(BaseModel):

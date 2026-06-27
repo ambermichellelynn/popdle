@@ -10,7 +10,13 @@ function getOrCreateUserId(): string {
   return id;
 }
 
-export function useUserId(): string {
-  const [userId] = useState(getOrCreateUserId);
-  return userId;
+export function useUserId(): [string, (id: string) => void] {
+  const [userId, setUserIdState] = useState(getOrCreateUserId);
+
+  function setUserId(id: string) {
+    localStorage.setItem(STORAGE_KEY, id);
+    setUserIdState(id);
+  }
+
+  return [userId, setUserId];
 }
