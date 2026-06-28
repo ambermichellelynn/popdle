@@ -204,7 +204,7 @@ def get_archive(user_id: str, db: Session = Depends(get_db)) -> list[ArchiveEntr
         raise HTTPException(status_code=403, detail="Archived puzzles are a Premium feature")
 
     entries = []
-    for offset in range(1, ARCHIVE_DAYS + 1):
+    for offset in range(0, ARCHIVE_DAYS):
         target_date = date.today() - timedelta(days=offset)
         daily_word = _get_or_create_word_for_date(db, target_date)
         attempt = (
