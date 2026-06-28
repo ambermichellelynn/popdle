@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type HistoryEntry } from "../api";
+import { formatPuzzleDate } from "../lib/formatDate";
 
 interface StatsModalProps {
   userId: string;
@@ -75,12 +76,7 @@ export function StatsModal({
         <div className="history-list">
           {history?.map((entry) => (
             <div key={entry.word_date} className="history-row">
-              <span className="history-date">
-                {new Date(entry.word_date).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
+              <span className="history-date">{formatPuzzleDate(entry.word_date)}</span>
               <span className="history-answer">{entry.answer ?? "In progress"}</span>
               <span className="history-result">{entry.won ? "Won" : entry.game_over ? "Lost" : "—"}</span>
             </div>

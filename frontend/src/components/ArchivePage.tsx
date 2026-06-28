@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type ArchiveEntry } from "../api";
+import { formatPuzzleDate } from "../lib/formatDate";
 
 interface ArchivePageProps {
   userId: string;
@@ -38,12 +39,7 @@ export function ArchivePage({ userId, onSelectPuzzle, onViewStats }: ArchivePage
                 </span>
               )}
             </span>
-            <span className="archive-date">
-              {new Date(entry.word_date).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
+            <span className="archive-date">{formatPuzzleDate(entry.word_date)}</span>
             <span className="archive-clue">{entry.clue}</span>
             <span className="archive-status">
               {!entry.played
